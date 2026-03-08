@@ -6,8 +6,8 @@ import "./globals.css";
 import LenisScroll from "./components/LenisScroll";
 import MyGeneration from "./pages/MyGeneration";
 import YtPreview from "./pages/YtPreview";
-import Generate from "./pages/generate";
 import Login from "./components/Login";
+import Generate from "./pages/Generate";
 
 export default function App() {
   return (
