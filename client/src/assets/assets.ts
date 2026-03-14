@@ -170,17 +170,24 @@ export const yt_html = `
     <!DOCTYPE html>
     <html lang="en">
         <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>YouTube - Clone</title>
-            <!-- Tailwind CSS CDN -->
-            <script src="https://cdn.tailwindcss.com"></script>
-            <script>
-                tailwind.config = { darkMode: 'class', theme: { extend: { colors: { yt: '#0f0f0f', yt2: '#181818', ytBorder: '#303030', }, }, }, };
-            </script>
-            <!-- Lucide Icons CDN -->
-            <script src="https://unpkg.com/lucide@latest"></script>
-        </head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube - Clone</title>
+
+    <!-- Tailwind via jsDelivr (more reliable than cdn.tailwindcss.com) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Lucide via jsDelivr -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <style type="text/tailwindcss">
+        @theme {
+            --color-yt: #0f0f0f;
+            --color-yt2: #181818;
+            --color-ytBorder: #303030;
+        }
+    </style>
+</head>
         <body class="dark bg-yt text-white font-sans">
             <!-- ================= HEADER ================= -->
             <header class="fixed top-0 left-0 right-0 z-50 bg-yt flex items-center justify-between px-4 h-14">
