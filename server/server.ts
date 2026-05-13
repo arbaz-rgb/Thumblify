@@ -49,7 +49,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 app.use("/api/auth", AuthRouter);
 app.use("/api/thumbnail", ThumbnailRouter);
-app.use("api/user", UserRouter);
+app.use("/api/user", UserRouter);
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
