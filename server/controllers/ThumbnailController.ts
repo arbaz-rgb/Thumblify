@@ -1,12 +1,10 @@
 import { Request, Response } from "express";
 import Thumbnail from "../model/Thumbnail.js";
-import { GenerateContentConfig } from "@google/genai";
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import ai from "../config/ai.js";
 import path from "path";
 import fs from "fs";
 import { v2 as cloudinary } from "cloudinary";
 import session from "express-session";
+import axios from "axios";
 
 const stylePrompts = {
   "Bold & Graphic":
@@ -74,36 +72,8 @@ export const generateThumbnail = async (req: Request, res: Response) => {
       isGenerating: true,
     });
 
-    const model = "gemini-1.5-flash";
+    /////
 
-    const generationConfig: GenerateContentConfig = {
-      maxOutputTokens: 200,
-      temperature: 0.8,
-      topP: 0.95,
-      responseModalities: ["IMAGE"],
-      imageConfig: {
-        aspectRatio: aspect_ratio || "16:9",
-        imageSize: "1k",
-      },
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-        {
-          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-          threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        },
-      ],
-    };
     const styleText =
       stylePrompts[style as keyof typeof stylePrompts] ||
       "professional thumbnail";
@@ -127,32 +97,16 @@ export const generateThumbnail = async (req: Request, res: Response) => {
     prompt += ` The thumbnail should be ${aspect_ratio}, visually stunning, and designed to maximize click-through rate. Make it bold, professional, and impossible to ignore.`;
 
     //generater the image using the ai models
-    const response = await ai.models.generateContent({
-      model,
-      contents: [prompt],
-      config: generationConfig,
+    const encodedPrompt = encodeURIComponent(prompt);
+
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
+    // download image
+
+    const imageResponse = await axios.get(imageUrl, {
+      responseType: "arraybuffer",
     });
 
-    // check if response is valid
-
-    if (!response?.candidates?.[0].content?.parts) {
-      throw new Error("Unexpected response");
-    }
-
-    const parts = response.candidates[0].content.parts;
-
-    let finalBuffer: Buffer | null = null;
-
-    // Extract image data from response
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        finalBuffer = Buffer.from(part.inlineData.data, "base64");
-      }
-    }
-
-    if (!finalBuffer) {
-      throw new Error("No image generated");
-    }
+    const finalBuffer = Buffer.from(imageResponse.data);
 
     const filename = `final-output-${Date.now()}.png`;
     const finalPath = path.join("images", filename);
