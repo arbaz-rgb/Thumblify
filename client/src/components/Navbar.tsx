@@ -74,11 +74,10 @@ export default function Navbar() {
               Get Started
             </button>
           )}
+          <button onClick={() => setIsOpen(true)} className="md:hidden">
+            <MenuIcon size={26} className="active:scale-90 transition" />
+          </button>
         </div>
-
-        <button onClick={() => setIsOpen(true)} className="md:hidden">
-          <MenuIcon size={26} className="active:scale-90 transition" />
-        </button>
       </motion.nav>
 
       <div

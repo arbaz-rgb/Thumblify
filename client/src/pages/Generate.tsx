@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   colorSchemes,
-  dummyThumbnails,
   type AspectRatio,
   type IThumbnail,
   type ThumbnailStyle,
@@ -12,9 +11,16 @@ import AspectRatioSelector from "../components/AspectRatioSelector";
 import StyleSelector from "../components/StyleSelector";
 import ColorSchemeSelector from "../components/ColorSchemeSelector";
 import PreviewPanel from "../components/PreviewPanel";
+import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
+import api from "../configs/api";
 
 const Generate = () => {
   const { id } = useParams();
+
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
 
   const [title, setTitle] = useState("");
   const [additionalDetails, setAdditionalDetails] = useState("");
@@ -30,29 +36,73 @@ const Generate = () => {
   const [style, setStyle] = useState<ThumbnailStyle>("Bold & Graphic");
   const [styleDropdownOpen, setstyleDropdownOpen] = useState(false);
 
-  const handleGenerate = async () => {};
+  const handleGenerate = async () => {
+    if (!isLoggedIn) return toast.error("Please login to generate thumbnails");
+
+    if (!title.trim()) return toast.error("Title is required");
+
+    setLoading(true);
+
+    const api_payload = {
+      title,
+      prompt: additionalDetails,
+      style,
+      aspect_ratio: aspectRatio,
+      color_scheme: colorSchemeId,
+      text_overlay: true,
+    };
+
+    const { data } = await api.post("/api/thumbnail/generate", api_payload);
+
+    if (data.thumbnail) {
+      navigate("/generate/" + data.thumbnail._id);
+      toast.success(data.message);
+    }
+  };
 
   const fetchThumbnail = async () => {
-    if (id) {
-      const thumbnail: any = dummyThumbnails.find(
-        (thumbnail) => thumbnail._id === id,
-      );
+    try {
+      const { data } = await api.get(`/api/user/thumbnail/${id}`);
 
-      setThumbnail(thumbnail);
-      setAdditionalDetails(thumbnail.user_prompt);
-      setTitle(thumbnail.title);
-      setColorSchemeId(thumbnail.color_scheme);
-      setAspectRatio(thumbnail.aspect_ratio);
-      setStyle(thumbnail.style);
-      setLoading(false);
+      setThumbnail(data.thumbnail as IThumbnail);
+
+      setLoading(!data.thumbnail?.image_url);
+
+      setAdditionalDetails(data.thumbnail?.user_prompt || "");
+      setTitle(data.thumbnail?.title || "");
+      setColorSchemeId(data.thumbnail?.color_scheme || colorSchemes[0].id);
+      setAspectRatio(data.thumbnail?.aspect_ratio || "16:9");
+      setStyle(data.thumbnail?.style || "Bold & Graphic");
+    } catch (error: any) {
+      console.error(error);
+
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Something went wrong",
+      );
     }
   };
 
   useEffect(() => {
-    if (id) {
+    if (isLoggedIn && id) {
       fetchThumbnail();
     }
-  }, [id]);
+    if (id && loading && isLoggedIn) {
+      const interval = setInterval(() => {
+        fetchThumbnail();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [id, isLoggedIn, loading]);
+
+
+  // if the url has no id and thumbnail exist so remove the old thumbnail
+  useEffect(() => {
+    if (!id && thumbnail) {
+      setThumbnail(null);
+    }
+  }, [pathname]);
   return (
     <>
       <SoftBackdrop />
