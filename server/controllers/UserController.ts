@@ -9,10 +9,10 @@ export const getUsersThumbnails = async (req: Request, res: Response) => {
 
     // Find thumbnails of that user
     // Sort by newest first
-    const thumbnail = await Thumbnail.find({ userId }).sort({ createdAt: -1 });
+    const thumbnails = await Thumbnail.find({ userId }).sort({ createdAt: -1 });
 
     // Send response
-    res.json({ thumbnail });
+    res.json({ thumbnails });
   } catch (error: any) {
     console.log(error);
 
