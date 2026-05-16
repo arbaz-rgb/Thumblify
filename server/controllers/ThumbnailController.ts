@@ -3,7 +3,6 @@ import Thumbnail from "../model/Thumbnail.js";
 import path from "path";
 import fs from "fs";
 import { v2 as cloudinary } from "cloudinary";
-import session from "express-session";
 import axios from "axios";
 
 const stylePrompts = {
@@ -47,7 +46,72 @@ const colorSchemeDescriptions = {
   pastel:
     "soft pastel colors, low saturation, gentle tones, calm and friendly aesthetic",
 };
+
+const toNvidiaImageSize = (aspectRatio?: string) => {
+  const sizes: Record<string, { width: number; height: number }> = {
+    "1:1": { width: 1024, height: 1024 },
+    "16:9": { width: 1344, height: 768 },
+    "9:16": { width: 768, height: 1344 },
+    "4:3": { width: 1152, height: 896 },
+    "3:4": { width: 896, height: 1152 },
+  };
+
+  return sizes[aspectRatio || ""] || sizes["16:9"];
+};
+
+type NvidiaImageResult = {
+  url?: string;
+  b64_json?: string;
+  base64?: string;
+  image?: string;
+};
+
+type NvidiaImageResponse = NvidiaImageResult & {
+  data?: NvidiaImageResult[];
+  images?: NvidiaImageResult[];
+  artifacts?: NvidiaImageResult[];
+  output?: NvidiaImageResult[];
+};
+
+const NVIDIA_IMAGE_GENERATION_URL =
+  "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell";
+
+const getGeneratedImage = (response: NvidiaImageResponse) => {
+  return (
+    response.data?.[0] ||
+    response.images?.[0] ||
+    response.artifacts?.[0] ||
+    response.output?.[0] ||
+    response
+  );
+};
+
+const getGeneratedImageBuffer = async (image: NvidiaImageResult) => {
+  const base64Image = image.b64_json || image.base64 || image.image;
+
+  if (base64Image) {
+    console.log("NVIDIA returned a base64 image");
+    return Buffer.from(
+      base64Image.replace(/^data:image\/\w+;base64,/, ""),
+      "base64",
+    );
+  }
+
+  if (image.url) {
+    console.log("NVIDIA returned an image URL:", image.url);
+    const imageResponse = await axios.get(image.url, {
+      responseType: "arraybuffer",
+    });
+    return Buffer.from(imageResponse.data);
+  }
+
+  throw new Error("NVIDIA NIM did not return image data");
+};
+
 export const generateThumbnail = async (req: Request, res: Response) => {
+  let thumbnail: InstanceType<typeof Thumbnail> | null = null;
+  let finalPath = "";
+
   try {
     const { userId } = req.session;
 
@@ -60,7 +124,7 @@ export const generateThumbnail = async (req: Request, res: Response) => {
       text_overlay,
     } = req.body;
 
-    const thumbnail = await Thumbnail.create({
+    thumbnail = await Thumbnail.create({
       userId,
       title,
       prompt_used: user_prompt,
@@ -96,20 +160,44 @@ export const generateThumbnail = async (req: Request, res: Response) => {
 
     prompt += ` The thumbnail should be ${aspect_ratio}, visually stunning, and designed to maximize click-through rate. Make it bold, professional, and impossible to ignore.`;
 
-    //generater the image using the ai models
-    const encodedPrompt = encodeURIComponent(prompt);
+    if (!process.env.NVIDIA_API_KEY) {
+      throw new Error("NVIDIA_API_KEY is missing in .env");
+    }
 
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}`;
-    // download image
+    console.log("Generating thumbnail with NVIDIA FLUX");
+    console.log("NVIDIA endpoint:", NVIDIA_IMAGE_GENERATION_URL);
+    console.log("NVIDIA model:", "black-forest-labs/flux.1-schnell");
 
-    const imageResponse = await axios.get(imageUrl, {
-      responseType: "arraybuffer",
-    });
+    const { width, height } = toNvidiaImageSize(aspect_ratio);
+    const nvidiaResponse = await axios.post<NvidiaImageResponse>(
+      NVIDIA_IMAGE_GENERATION_URL,
+      {
+        prompt,
+        width,
+        height,
+        cfg_scale: 0,
+        mode: "base",
+        samples: 1,
+        seed: 0,
+        steps: 4,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        timeout: 120000,
+      },
+    );
 
-    const finalBuffer = Buffer.from(imageResponse.data);
+    console.log("NVIDIA image generation status:", nvidiaResponse.status);
+
+    const generatedImage = getGeneratedImage(nvidiaResponse.data);
+    const finalBuffer = await getGeneratedImageBuffer(generatedImage);
 
     const filename = `final-output-${Date.now()}.png`;
-    const finalPath = path.join("images", filename);
+    finalPath = path.join("images", filename);
 
     //create the image dir if it doesnot exist
     fs.mkdirSync("images", { recursive: true });
@@ -133,12 +221,33 @@ export const generateThumbnail = async (req: Request, res: Response) => {
       message: "Thumbnail Generated",
       thumbnail,
     });
-
-    // remove local image file after upload
-    fs.unlinkSync(finalPath);
   } catch (error: any) {
-    console.log(error);
-    return res.status(500).json({ message: error.message });
+    console.error("Thumbnail generation failed");
+    console.error("Error message:", error?.message);
+
+    if (axios.isAxiosError(error)) {
+      console.error("Axios status:", error.response?.status);
+      console.error("Axios response:", error.response?.data);
+    } else {
+      console.error(error);
+    }
+
+    if (thumbnail) {
+      thumbnail.isGenerating = false;
+      await thumbnail.save();
+    }
+
+    return res.status(500).json({
+      message:
+        error?.response?.data?.error?.message ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to generate thumbnail",
+    });
+  } finally {
+    if (finalPath && fs.existsSync(finalPath)) {
+      fs.unlinkSync(finalPath);
+    }
   }
 };
 
