@@ -1,7 +1,23 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
 import type { IUser } from "../assets/assets";
 import api from "../configs/api";
 import toast from "react-hot-toast";
+
+type ApiErrorResponse = {
+  message?: string;
+};
+
+const getApiErrorMessage = (
+  error: unknown,
+  fallback = "Something went wrong",
+) => {
+  if (axios.isAxiosError<ApiErrorResponse>(error)) {
+    return error.response?.data?.message || fallback;
+  }
+
+  return fallback;
+};
 
 interface AuthContextProps {
   isLoggedIn: boolean;
@@ -59,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       toast.success(data.message);
     } catch (error) {
-      console.log(error);
+      toast.error(getApiErrorMessage(error, "Unable to create account"));
     }
   };
 
@@ -83,7 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       toast.success(data.message);
     } catch (error) {
-      console.log(error);
+      toast.error(getApiErrorMessage(error, "Unable to log in"));
     }
   };
 
@@ -95,7 +111,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoggedIn(false);
       toast.success(data.message);
     } catch (error) {
-      console.log(error);
+      toast.error(getApiErrorMessage(error, "Unable to log out"));
     }
   };
 
@@ -108,7 +124,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoggedIn(true);
       }
     } catch (error) {
-      console.log(error);
+      if (axios.isAxiosError<ApiErrorResponse>(error)) {
+        if (error.response?.status !== 401) {
+          toast.error(error.response?.data?.message || "Unable to verify user");
+        }
+
+        return;
+      }
+
+      toast.error("Unable to verify user");
     }
   };
 
