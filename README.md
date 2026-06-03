@@ -1,332 +1,420 @@
-# Thumblify
+# 🎨 Thumblify
 
-Thumblify is a full-stack AI thumbnail generator for creators. Users can create an account, generate thumbnails from a title and prompt, choose visual styles, aspect ratios, and color schemes, then manage their saved generations.
+![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react&logoColor=111827)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5.x-111827?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-## Features
+Thumblify is a full-stack AI thumbnail generator for creators. It lets users register, log in, generate thumbnails from a title and prompt, choose visual styles, aspect ratios, and color schemes, preview the result in a YouTube-style layout, and manage saved generations.
 
-- AI thumbnail generation with NVIDIA FLUX through NVIDIA NIM
-- Email and password auth with encrypted passwords
-- Session-based authentication with MongoDB session storage
-- Per-user thumbnail history
-- Cloudinary image hosting
-- Style, aspect ratio, and color scheme controls
-- Production-ready CORS and secure cookie configuration
-- Vite SPA routing support for hosted frontend deployments
+---
 
-## Tech Stack
+## ✨ Features
 
-**Frontend**
+| Area | Implemented Capability |
+| --- | --- |
+| 🔐 Authentication | Email/password registration and login with bcrypt password hashing |
+| 🍪 Sessions | Express session authentication persisted with MongoDB via `connect-mongo` |
+| 🎨 AI generation | Thumbnail generation through NVIDIA NIM FLUX endpoint |
+| ☁️ Image hosting | Generated images are uploaded to Cloudinary |
+| 🖼️ Customization | Title, additional prompt, style, aspect ratio, color scheme, and text overlay payload |
+| 🧾 User library | Authenticated users can list, view, download, and delete their thumbnails |
+| ▶️ Preview | Generated thumbnails can be viewed inside a YouTube-style preview page |
+| 🏠 Landing page | Hero, features, testimonials, pricing, contact, and CTA sections |
+| 🚦 Health check | Backend exposes `/health` for deployment checks |
+| 🌐 SPA routing | Vercel rewrites and Netlify-style `_redirects` are included |
 
-- React 19
-- TypeScript
-- Vite
-- Tailwind CSS 4
-- React Router
-- Axios
-- Motion
-- Lucide React
+---
 
-**Backend**
+## 🧰 Tech Stack
 
-- Node.js
-- Express 5
-- TypeScript
-- MongoDB and Mongoose
-- Express Session
-- Connect Mongo
-- Bcrypt
-- Cloudinary
-- NVIDIA NIM image generation API
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite 7, Tailwind CSS 4 |
+| Routing/UI | React Router DOM 7, Lucide React, Motion, Lenis, React Hot Toast, React Fast Marquee |
+| HTTP Client | Axios with `withCredentials: true` |
+| Backend | Node.js, Express 5, TypeScript |
+| Database | MongoDB, Mongoose |
+| Auth | Express Session, Connect Mongo, bcrypt |
+| AI/Image | NVIDIA NIM FLUX image generation, Cloudinary |
+| Tooling | ESLint, tsx, nodemon |
+| Deployment Config | Render backend blueprint, Vercel frontend rewrites, Docker Compose |
 
-## Project Structure
+---
+
+## 🏗️ Project Architecture
+
+```mermaid
+flowchart LR
+  User["👤 User"] --> Client["⚛️ React + Vite Client"]
+  Client -->|Axios + cookies| API["🚀 Express API"]
+  API -->|Session store| Mongo[(🍃 MongoDB)]
+  API -->|User + thumbnail docs| Mongo
+  API -->|Generate image| NVIDIA["🧠 NVIDIA NIM FLUX"]
+  NVIDIA --> API
+  API -->|Upload image| Cloudinary["☁️ Cloudinary"]
+  Cloudinary --> API
+  API --> Client
+```
 
 ```text
 thumblify/
-|-- client/                 # React + Vite frontend
-|   |-- public/             # Static images, redirects, and icons
-|   `-- src/
-|       |-- assets/         # App assets and shared option data
-|       |-- components/     # Reusable UI components
-|       |-- configs/        # Axios API configuration
-|       |-- context/        # Auth context
-|       |-- data/           # Landing page content
-|       |-- pages/          # Route pages
-|       `-- sections/       # Home page sections
-|-- server/                 # Express + TypeScript backend
-|   |-- config/             # Database and AI client config
-|   |-- controllers/        # Route handlers
-|   |-- middleware/         # Auth middleware
-|   |-- model/              # Mongoose models
-|   `-- routes/             # API routes
-`-- render.yaml             # Render backend blueprint
+├── client/                     # React + Vite frontend
+│   ├── public/                 # Static assets, SPA redirects, icons
+│   └── src/
+│       ├── assets/             # Imported images, app option data, shared types
+│       ├── components/         # Reusable UI components
+│       ├── configs/            # Axios API client
+│       ├── context/            # Auth context and auth actions
+│       ├── data/               # Landing-page content
+│       ├── pages/              # Route-level pages
+│       └── sections/           # Home page sections
+├── server/                     # Express + TypeScript backend
+│   ├── config/                 # MongoDB and NVIDIA OpenAI-compatible client config
+│   ├── controllers/            # Request handlers
+│   ├── middleware/             # Session auth guard
+│   ├── model/                  # Mongoose models
+│   └── routes/                 # API route definitions
+├── docker-compose.yml
+└── render.yaml
 ```
 
-## Prerequisites
+---
 
-- Node.js 20 or newer
-- npm
-- MongoDB database
-- Cloudinary account
-- NVIDIA API key with access to the FLUX endpoint
+## 🧭 Frontend Routes
 
-## Environment Variables
+| Route | Component | Purpose |
+| --- | --- | --- |
+| `/` | `HomePage` | Landing page |
+| `/generate` | `Generate` | Create a new thumbnail |
+| `/generate/:id` | `Generate` | View an existing generation |
+| `/my-generation` | `MyGeneration` | View, download, preview, and delete generated thumbnails |
+| `/preview` | `YtPreview` | Render a YouTube-style preview using query params |
+| `/login` | `Login` | Authentication screen |
 
-Copy the example env files before running locally:
+---
 
-```bash
-cp server/.env.example server/.env
-cp client/.env.example client/.env
-```
+## 🔌 API Endpoints
 
-### Backend
+Base path is served by the backend. In local development the server defaults to `http://localhost:3000` unless `PORT` is set.
 
-Create `server/.env`:
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/` | No | Plain text server status: `Server is Live!` |
+| `GET` | `/health` | No | JSON health check: `{ "status": "ok" }` |
+| `POST` | `/api/auth/register` | No | Create a user and start a session |
+| `POST` | `/api/auth/login` | No | Authenticate a user and start a session |
+| `GET` | `/api/auth/verify` | Yes | Return the current session user |
+| `POST` | `/api/auth/verify` | Yes | Return the current session user |
+| `POST` | `/api/auth/logout` | Yes | Destroy the current session |
+| `POST` | `/api/thumbnail/generate` | Yes | Generate a thumbnail, upload it to Cloudinary, and save the record |
+| `DELETE` | `/api/thumbnail/delete/:id` | Yes | Delete one owned thumbnail |
+| `GET` | `/api/user/thumbnails` | Yes | List thumbnails for the current user, newest first |
+| `GET` | `/api/user/thumbnail/:id` | Yes | Fetch one owned thumbnail |
+
+### `POST /api/thumbnail/generate` Payload
+
+| Field | Source in Client | Notes |
+| --- | --- | --- |
+| `title` | Required text input | Used as the main thumbnail topic |
+| `prompt` | Optional textarea | Additional generation details |
+| `style` | Style selector | `Bold & Graphic`, `Minimalist`, `Photorealistic`, `Illustrated`, `Tech/Futuristic` |
+| `aspect_ratio` | Aspect selector | Client options: `16:9`, `1:1`, `9:16` |
+| `color_scheme` | Color selector | `vibrant`, `sunset`, `ocean`, `forest`, `purple`, `monochrome`, `neon`, `pastel` |
+| `text_overlay` | Client sends `true` | Stored on the thumbnail document |
+
+---
+
+## 🧬 Data Models
+
+<details>
+<summary><strong>👤 User</strong></summary>
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `name` | `string` | Required, trimmed |
+| `email` | `string` | Required, unique, lowercase, trimmed |
+| `password` | `string` | Required, bcrypt hashed |
+| `createdAt` / `updatedAt` | `Date` | Added by Mongoose timestamps |
+
+</details>
+
+<details>
+<summary><strong>🖼️ Thumbnail</strong></summary>
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `userId` | `string` | Required, references the owner |
+| `title` | `string` | Required, trimmed |
+| `description` | `string` | Optional |
+| `style` | `string` | Required enum |
+| `aspect_ratio` | `string` | Enum with default `16:9` |
+| `color_scheme` | `string` | Optional enum |
+| `text_overlay` | `boolean` | Default `false` |
+| `image_url` | `string` | Cloudinary URL, default empty string |
+| `prompt_used` | `string` | Stored from request prompt |
+| `user_prompt` | `string` | Stored from request prompt |
+| `isGenerating` | `boolean` | Default `true` |
+| `createdAt` / `updatedAt` | `Date` | Added by Mongoose timestamps |
+
+</details>
+
+---
+
+## 🔐 Environment Variables
+
+### Server `.env`
+
+| Variable | Required | Used For |
+| --- | --- | --- |
+| `MONGODB_URL` | Yes | MongoDB connection and Mongo-backed session storage |
+| `SESSION_SECRET` | Yes | Express session signing secret |
+| `NVIDIA_API_KEY` | Yes for generation | Authorization for NVIDIA NIM image generation |
+| `CLOUDINARY_URL` | Yes for upload | Cloudinary SDK configuration |
+| `NODE_ENV` | No | Enables production cookie settings when set to `production` |
+| `PORT` | No | Backend port; defaults to `3000` |
+| `CLIENT_URL` | No | Allowed CORS origin |
+| `CLIENT_URLS` | No | Comma-separated allowed CORS origins |
+
+### Client `.env`
+
+| Variable | Required | Used For |
+| --- | --- | --- |
+| `VITE_BASE_URL` | Yes | Axios base URL for backend API requests |
+
+Example:
 
 ```env
+# server/.env
 NODE_ENV=development
 PORT=3000
 MONGODB_URL=your_mongodb_connection_string
-SESSION_SECRET=your_long_random_session_secret
+SESSION_SECRET=your_session_secret
 CLIENT_URL=http://localhost:5173
 CLIENT_URLS=http://localhost:5173
 NVIDIA_API_KEY=your_nvidia_api_key
 CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
 ```
 
-`CLIENT_URLS` supports a comma-separated list, for example:
-
 ```env
-CLIENT_URLS=http://localhost:5173,https://your-frontend-domain.com
-```
-
-### Frontend
-
-Create `client/.env`:
-
-```env
+# client/.env
 VITE_BASE_URL=http://localhost:3000
 ```
 
-For production, set `VITE_BASE_URL` to your deployed Render backend URL.
+---
 
-## Local Development
+## ⚙️ Installation Steps
 
-Install backend dependencies:
+### 1. Clone and Install
+
+```bash
+git clone <repository-url>
+cd thumblify
+```
 
 ```bash
 cd server
 npm install
 ```
-
-Install frontend dependencies:
 
 ```bash
 cd ../client
 npm install
 ```
 
-Start the backend:
+### 2. Configure Environment
+
+Create `server/.env` and `client/.env` using the variables listed above.
+
+### 3. Start Development Servers
 
 ```bash
 cd server
 npm run dev
 ```
 
-Start the frontend in another terminal:
-
 ```bash
 cd client
 npm run dev
 ```
 
-Open:
+Open the frontend at:
 
 ```text
 http://localhost:5173
 ```
 
-## Build
+---
 
-Build the backend:
+## 📜 Available Scripts
+
+| App | Script | Description |
+| --- | --- | --- |
+| Client | `npm run dev` | Start Vite dev server |
+| Client | `npm run build` | Build frontend into `dist/` |
+| Client | `npm run lint` | Run ESLint |
+| Client | `npm run preview` | Preview the production frontend build |
+| Server | `npm run dev` | Run API with nodemon and `tsx` |
+| Server | `npm run server` | Same command as `npm run dev` |
+| Server | `npm run build` | Compile TypeScript with `tsc` |
+| Server | `npm start` | Run `node dist/server.js` |
+
+---
+
+## 🐳 Docker Setup
+
+The repository includes:
+
+| File | Current Implementation |
+| --- | --- |
+| `docker-compose.yml` | Builds `client` and `server`, maps frontend `5173:5173`, maps backend `4000:4000`, and loads `./server/.env` for backend |
+| `client/Dockerfile` | Uses `node:22-alpine`, installs dependencies, exposes `5173`, runs Vite dev server with `--host` |
+| `server/Dockerfile` | Currently has the same contents as the client Dockerfile: exposes `5173` and runs `npm run dev -- --host` |
+
+Run with:
+
+```bash
+docker compose up --build
+```
+
+Current Docker-related implementation notes:
+
+| Item | Observed State |
+| --- | --- |
+| Frontend container | Matches Vite dev server usage on port `5173` |
+| Backend compose port | Maps host/container `4000:4000` |
+| Backend app default port | `PORT` env var or `3000` |
+| Backend Dockerfile | Does not run the compiled production server |
+
+Because the backend port depends on `PORT`, ensure `server/.env` matches the compose mapping if using Docker:
+
+```env
+PORT=4000
+```
+
+---
+
+## 🚀 Deployment Details
+
+### Render Backend
+
+`render.yaml` defines one web service:
+
+| Setting | Value |
+| --- | --- |
+| Service name | `thumblify-api` |
+| Runtime | Node |
+| Root directory | `server` |
+| Plan | Free |
+| Build command | `npm install && npm run build` |
+| Start command | `npm start` |
+| Health check path | `/health` |
+
+Render environment variables declared in `render.yaml`:
+
+```text
+NODE_ENV=production
+MONGODB_URL
+SESSION_SECRET
+CLIENT_URL
+CLIENT_URLS
+NVIDIA_API_KEY
+CLOUDINARY_URL
+```
+
+In production, the backend sets session cookies with:
+
+| Cookie Setting | Production Value |
+| --- | --- |
+| `sameSite` | `none` |
+| `secure` | `true` |
+| `httpOnly` | `true` |
+| `maxAge` | 7 days |
+
+### Vercel Frontend
+
+`client/vercel.json` rewrites all routes to `index.html`:
+
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+Use:
+
+| Setting | Value |
+| --- | --- |
+| Root directory | `client` |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| Required env var | `VITE_BASE_URL=<deployed-backend-url>` |
+
+### Static SPA Redirects
+
+`client/public/_redirects` contains:
+
+```text
+/* /index.html 200
+```
+
+This supports SPA fallback routing on platforms that use Netlify-style redirects.
+
+---
+
+## 🔄 Thumbnail Generation Flow
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant C as React Client
+  participant A as Express API
+  participant M as MongoDB
+  participant N as NVIDIA NIM
+  participant CL as Cloudinary
+
+  U->>C: Submit title, prompt, style, ratio, color
+  C->>A: POST /api/thumbnail/generate
+  A->>M: Create thumbnail with isGenerating=true
+  A->>N: Request FLUX image generation
+  N-->>A: Return base64 image or image URL
+  A->>CL: Upload generated image
+  CL-->>A: Return secure URL
+  A->>M: Save image_url and isGenerating=false
+  A-->>C: Return thumbnail document
+  C->>A: GET /api/user/thumbnail/:id
+  A-->>C: Return saved thumbnail
+```
+
+---
+
+## 🧪 Verification
+
+The implementation includes lint/build scripts, but no dedicated test suite is present in the repository.
+
+Useful checks:
+
+```bash
+cd client
+npm run lint
+npm run build
+```
 
 ```bash
 cd server
 npm run build
 ```
 
-Start the compiled backend:
+---
 
-```bash
-npm start
-```
+## 📄 License
 
-Build the frontend:
-
-```bash
-cd client
-npm run build
-```
-
-Preview the frontend build:
-
-```bash
-npm run preview
-```
-
-## Deployment
-
-### Backend on Render
-
-The repository includes `render.yaml` for a Render web service.
-
-Manual Render setup:
-
-1. Create a new Web Service from this GitHub repository.
-2. Set the root directory to `server`.
-3. Set the build command:
-
-```bash
-npm install && npm run build
-```
-
-4. Set the start command:
-
-```bash
-npm start
-```
-
-5. Add environment variables:
-
-```env
-NODE_ENV=production
-MONGODB_URL=your_mongodb_connection_string
-SESSION_SECRET=your_long_random_session_secret
-CLIENT_URL=https://your-frontend-domain.com
-CLIENT_URLS=https://your-frontend-domain.com
-NVIDIA_API_KEY=your_nvidia_api_key
-CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
-```
-
-6. Use `/health` as the health check path.
-
-Important: the backend uses secure cross-site cookies in production. The frontend must be served over HTTPS and its exact origin must be listed in `CLIENT_URLS`.
-
-### Frontend on Vercel
-
-1. Import this GitHub repository into Vercel.
-2. Set the root directory to `client`.
-3. Set the build command:
-
-```bash
-npm run build
-```
-
-4. Set the output directory:
-
-```text
-dist
-```
-
-5. Add environment variable:
-
-```env
-VITE_BASE_URL=https://your-render-backend.onrender.com
-```
-
-The included `client/vercel.json` rewrites all routes to `index.html`, so direct refreshes on React routes work.
-
-### Frontend on Netlify or Render Static Site
-
-Use these settings:
-
-```text
-Base directory: client
-Build command: npm run build
-Publish directory: dist
-```
-
-Set:
-
-```env
-VITE_BASE_URL=https://your-render-backend.onrender.com
-```
-
-The included `client/public/_redirects` file enables SPA fallback routing.
-
-## Available Scripts
-
-### Frontend
-
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Build the frontend for production |
-| `npm run lint` | Run ESLint |
-| `npm run preview` | Preview the production build locally |
-
-### Backend
-
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Run the API with Nodemon and `tsx` |
-| `npm run server` | Alias for local Nodemon development |
-| `npm run build` | Compile TypeScript into `dist/` |
-| `npm start` | Run the compiled production server |
-
-## API Overview
-
-Base URL in local development:
-
-```text
-http://localhost:3000
-```
-
-### Auth
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `POST` | `/api/auth/register` | Create an account and start a session |
-| `POST` | `/api/auth/login` | Log in and start a session |
-| `GET` | `/api/auth/verify` | Verify the current authenticated session |
-| `POST` | `/api/auth/logout` | Destroy the current session |
-
-### Thumbnails
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `POST` | `/api/thumbnail/generate` | Generate a thumbnail for the logged-in user |
-| `DELETE` | `/api/thumbnail/delete/:id` | Delete a thumbnail owned by the logged-in user |
-
-### User
-
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/api/user/thumbnails` | Get the logged-in user's thumbnails |
-| `GET` | `/api/user/thumbnail/:id` | Get one thumbnail owned by the logged-in user |
-
-Authenticated routes require the session cookie, and the frontend Axios client sends requests with `withCredentials: true`.
-
-## Thumbnail Generation Flow
-
-1. The user enters a title and optional prompt details.
-2. The user selects a style, aspect ratio, and color scheme.
-3. The backend creates a pending thumbnail record in MongoDB.
-4. The backend builds a generation prompt and calls NVIDIA FLUX.
-5. The generated image is saved temporarily, uploaded to Cloudinary, and removed locally.
-6. The MongoDB thumbnail record is updated with the Cloudinary URL.
-7. The frontend loads the saved thumbnail and displays the result.
-
-## Production Checklist
-
-- Set `NODE_ENV=production` on Render.
-- Set `VITE_BASE_URL` to the deployed Render backend URL before building the frontend.
-- Add the deployed frontend URL to `CLIENT_URLS` on Render.
-- Use HTTPS for frontend and backend.
-- Use a strong `SESSION_SECRET`.
-- Keep `.env` files out of git.
-- Confirm MongoDB network access allows Render to connect.
-- Confirm Cloudinary and NVIDIA credentials are valid.
-
-## License
-
-This project is currently licensed under the ISC license declared in the server package.
+The server package declares the project license as `ISC`.
